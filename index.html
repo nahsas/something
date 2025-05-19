@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Magical Romantic Garden</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: black;
+      font-family: 'Georgia', serif;
+      touch-action: none;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #save-btn {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      z-index: 10;
+      padding: 10px 15px;
+      background: rgba(255, 192, 203, 0.8);
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #4b004b;
+      cursor: pointer;
+      box-shadow: 0 0 10px #ffb6c1;
+      transition: background 0.3s;
+    }
+
+    #save-btn:hover {
+      background: rgba(255, 192, 203, 1);
+    }
+  </style>
+</head>
+<body>
+
+<audio id="bg-music" preload="auto" loop>
+  <source src="https://cdn.pixabay.com/download/audio/2022/03/14/audio_9bbbe9c7df.mp3?filename=beautiful-love-113235.mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+<canvas id="canvas"></canvas>
+<button id="save-btn">📸 Save Image</button>
+
+<script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const audio = document.getElementById("bg-music");
+    const saveBtn = document.getElementById("save-btn");
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    let width = canvas.width;
+    let height = canvas.height;
+    let centerX = width / 2;
+    let centerY = height / 2.5;
+    
+    window.addEventListener("resize", () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      width = canvas.width;
+      height = canvas.height;
+      centerX = width / 2;
+      centerY = height / 2.5;
+    });
+    
+    function enableAudio() {
+      if (audio.paused) {
+        audio.play().catch(() => {});
+      }
+    }
+    
+    canvas.addEventListener("click", enableAudio);
+    canvas.addEventListener("touchstart", enableAudio);
+// Background stars
+const stars = Array.from({ length: 150 }, () => ({
+    x: Math.random() * width,
+    y: Math.random() * height,
+    size: Math.random() * 1.5,
+    alpha: Math.random(),
+    delta: Math.random() * 0.02 + 0.005
+  }));
+  
+  function drawStars() {
+    for (let star of stars) {
+      star.alpha += star.delta;
+      if (star.alpha > 1 || star.alpha < 0) {
+        star.delta *= -1;
+      }
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+      ctx.fill();
+    }
+  }
+  
+  // Shooting stars
+  const shootingStars = [];
+  
+  function spawnShootingStar() {
+    shootingStars.push({
+      x: Math.random() * width,
+      y: Math.random() * height * 0.4,
+      dx: 5 + Math.random() * 3,
+      dy: 3 + Math.random() * 2,
+      life: 0,
+      maxLife: 80
+    });
+    setTimeout(spawnShootingStar, 3000 + Math.random() * 5000);
+  }
+  
+  spawnShootingStar();
+  
+  function drawShootingStars() {
+    for (let i = shootingStars.length - 1; i >= 0; i--) {
+      const s = shootingStars[i];
+      ctx.beginPath();
+      const grad = ctx.createLinearGradient(s.x, s.y, s.x - s.dx * 10, s.y - s.dy * 10);
+      grad.addColorStop(0, "rgba(255,255,255,1)");
+      grad.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = 2;
+      ctx.moveTo(s.x, s.y);
+      ctx.lineTo(s.x - s.dx * 10, s.y - s.dy * 10);
+      ctx.stroke();
+  
+      s.x += s.dx;
+      s.y += s.dy;
+      s.life++;
+      if (s.life > s.maxLife) {
+        shootingStars.splice(i, 1);
+      }
+    }
+  }
+  
+  // Touch sparkles
+  const sparkles = [];
+  
+  canvas.addEventListener("click", (e) => {
+    createSparkle(e.clientX, e.clientY);
+  });
+  canvas.addEventListener("touchstart", (e) => {
+    const t = e.touches[0];
+    if (t) createSparkle(t.clientX, t.clientY);
+  });
+  
+  function createSparkle(x, y) {
+    for (let i = 0; i < 10; i++) {
+      sparkles.push({
+        x: x,
+        y: y,
+        angle: Math.random() * 2 * Math.PI,
+        speed: Math.random() * 3 + 1,
+        alpha: 1,
+        radius: Math.random() * 2 + 1
+      });
+    }
+  }
+  
+  function drawSparkles() {
+    for (let i = sparkles.length - 1; i >= 0; i--) {
+      const s = sparkles[i];
+      const dx = Math.cos(s.angle) * s.speed;
+      const dy = Math.sin(s.angle) * s.speed;
+      s.x += dx;
+      s.y += dy;
+      s.alpha -= 0.02;
+      if (s.alpha <= 0) {
+        sparkles.splice(i, 1);
+        continue;
+      }
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${s.alpha})`;
+      ctx.fill();
+    }
+  }
+// Flower class
+class Flower {
+    constructor(baseX, baseY, color, size, petalCount) {
+      this.baseX = baseX;
+      this.baseY = baseY;
+      this.color = color;
+      this.size = size;
+      this.petalCount = petalCount;
+      this.growth = 0;
+      this.swayOffset = Math.random() * 10000;
+      this.petalFall = false;
+    }
+  
+    getSwayX() {
+      return Math.sin((Date.now() + this.swayOffset) / 1000) * 15;
+    }
+  
+    drawStem() {
+      const swayX = this.getSwayX();
+      ctx.beginPath();
+      ctx.moveTo(this.baseX, height);
+      ctx.quadraticCurveTo(this.baseX + swayX / 2, (height + this.baseY) / 2, this.baseX + swayX, this.baseY);
+      ctx.strokeStyle = "#2e8b57";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+  
+    draw() {
+      const swayX = this.getSwayX();
+      ctx.save();
+      ctx.translate(this.baseX + swayX, this.baseY);
+  
+      const petalLength = this.growth;
+      const petalWidth = this.growth * 0.6;
+  
+      for (let i = 0; i < this.petalCount; i++) {
+        ctx.save();
+        ctx.rotate((Math.PI * 2 / this.petalCount) * i);
+        ctx.beginPath();
+        ctx.ellipse(0, -petalLength / 2, petalWidth, petalLength, 0, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.restore();
+      }
+  
+      // Center
+      ctx.beginPath();
+      ctx.arc(0, 0, this.growth * 0.3, 0, Math.PI * 2);
+      ctx.fillStyle = "#FFFF88";
+      ctx.fill();
+  
+      // Flower shimmer
+      if (this.growth >= this.size) {
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = this.color;
+      }
+  
+      ctx.restore();
+    }
+  
+    update() {
+      if (this.growth < this.size) {
+        this.growth += 0.3;
+      } else if (!this.petalFall) {
+        createPetals(this.baseX, this.baseY);
+        this.petalFall = true;
+      }
+    }
+  }
+  
+  const flowers = [];
+  const colors = ["#FF69B4", "#FFB6C1", "#FF1493", "#DB7093", "#E91E63", "#FF6F61"];
+  const petalCounts = [5, 6, 8];
+  
+  function createFlower(x) {
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const size = 6 + Math.random() * 10;
+    const petals = petalCounts[Math.floor(Math.random() * petalCounts.length)];
+    const baseY = height - (Math.random() * 100 + 30);
+    flowers.push(new Flower(x, baseY, color, size, petals));
+  }
+  
+  for (let i = 0; i < 50; i++) {
+    createFlower(Math.random() * width);
+  }
+  
+  canvas.addEventListener("click", (e) => createFlower(e.clientX));
+  canvas.addEventListener("touchstart", (e) => {
+    const t = e.touches[0];
+    if (t) createFlower(t.clientX);
+  });
+  const groupA = [];
+  const particles = [];
+  const HEART_SCALE = 10;
+  const HEART_POINTS = 150;
+  let pulseTime = 0;
+  
+  function heartFunction(t, scale) {
+    const x = 16 * Math.pow(Math.sin(t), 3);
+    const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) -
+                2 * Math.cos(3 * t) - Math.cos(4 * t));
+    return {
+      x: centerX + x * scale,
+      y: centerY + y * scale
+    };
+  }
+  
+  function generateHeartOutlines() {
+    const outlines = [];
+    for (let i = 0; i < 2; i++) {
+      const scale = HEART_SCALE * (1 - (i * 0.3));
+      const outline = [];
+      for (let j = 0; j < HEART_POINTS; j++) {
+        const t = (Math.PI * 2 * j) / HEART_POINTS;
+        outline.push(heartFunction(t, scale));
+      }
+      outlines.push(outline);
+    }
+    return outlines;
+  }
+  
+  const outlines = generateHeartOutlines();
+  
+  function fillGroupA() {
+    for (let i = 0; i < outlines.length; i++) {
+      outlines[i].forEach(() => {
+        groupA.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          hue: 340 + Math.random() * 20,
+          t: Math.random(),
+          speed: 0.001 + Math.random() * 0.002,
+          heartIndex: i,
+          pulseOffset: Math.random() * Math.PI * 2
+        });
+      });
+    }
+  }
+  
+  function createParticles(count = 100) {
+    for (let i = 0; i < count; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        size: Math.random() * 2 + 1,
+        speedY: Math.random() * 0.5 + 0.2,
+        alpha: Math.random() * 0.5 + 0.3
+      });
+    }
+  }
+  
+  fillGroupA();
+  createParticles();
+  const petals = [];
+
+  function createPetals(x, y) {
+    for (let i = 0; i < 5 + Math.random() * 5; i++) {
+      petals.push({
+        x: x,
+        y: y,
+        radius: Math.random() * 2 + 2,
+        alpha: 1,
+        dx: (Math.random() - 0.5) * 1,
+        dy: Math.random() * 1.5 + 1
+      });
+    }
+  }
+  
+  function drawPetals() {
+    for (let i = petals.length - 1; i >= 0; i--) {
+      const p = petals[i];
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,182,193,${p.alpha})`;
+      ctx.fill();
+      p.x += p.dx;
+      p.y += p.dy;
+      p.alpha -= 0.01;
+      if (p.alpha <= 0) petals.splice(i, 1);
+    }
+  }
+  function animate() {
+    pulseTime += 0.05;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+    ctx.fillRect(0, 0, width, height);
+  
+    drawStars();
+    drawShootingStars();
+    drawSparkles();
+    drawPetals();
+  
+    particles.forEach(p => {
+      p.y -= p.speedY;
+      if (p.y < 0) {
+        p.y = height;
+        p.x = Math.random() * width;
+      }
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(255, 200, 255, ${p.alpha})`;
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  
+    flowers.forEach(f => {
+      f.update();
+      f.drawStem();
+      f.draw();
+    });
+  
+    groupA.forEach(dot => {
+      dot.t += dot.speed;
+      if (dot.t > 1) dot.t -= 1;
+  
+      const path = outlines[dot.heartIndex];
+      const index = Math.floor(dot.t * HEART_POINTS) % HEART_POINTS;
+      const target = path[index];
+  
+      const ease = 0.05;
+      dot.x += (target.x - dot.x) * ease;
+      dot.y += (target.y - dot.y) * ease;
+  
+      dot.hue += 0.1;
+      if (dot.hue > 360) dot.hue = 300;
+      const color = `hsl(${dot.hue}, 80%, 70%)`;
+  
+      const pulse = 1.5 + Math.sin(pulseTime + dot.pulseOffset) * 1.5;
+  
+      ctx.shadowBlur = 15;
+      ctx.shadowColor = color;
+  
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(dot.x, dot.y, pulse, 0, Math.PI * 2);
+      ctx.fill();
+  
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
+    });
+  
+    requestAnimationFrame(animate);
+  }
+  
+  animate();
+  saveBtn.addEventListener("click", () => {
+    const dataURL = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.download = "romantic_scene.png";
+    link.href = dataURL;
+    link.click();
+  });
+</script>
+</body>
+</html>
+                
