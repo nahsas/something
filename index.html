@@ -246,7 +246,7 @@ class Flower {
   
     update() {
       if (this.growth < this.size) {
-        this.growth += 0.3;
+        this.growth += 0.2;
       } else if (!this.petalFall) {
         createPetals(this.baseX, this.baseY);
         this.petalFall = true;
@@ -278,7 +278,7 @@ class Flower {
   const groupA = [];
   const particles = [];
   const HEART_SCALE = 10;
-  const HEART_POINTS = 150;
+  const HEART_POINTS = 50;
   let pulseTime = 0;
   
   function heartFunction(t, scale) {
