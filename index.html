@@ -266,7 +266,7 @@ class Flower {
     flowers.push(new Flower(x, baseY, color, size, petals));
   }
   
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < Math.random() * 5; i++) {
     createFlower(Math.random() * width);
   }
   
@@ -430,7 +430,7 @@ class Flower {
   saveBtn.addEventListener("click", () => {
     const dataURL = canvas.toDataURL("image/png");
     const link = document.createElement("a");
-    link.download = "romantic_scene.png";
+    link.download = "for_you_amey.png";
     link.href = dataURL;
     link.click();
   });
